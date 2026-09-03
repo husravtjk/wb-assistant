@@ -1,0 +1,25 @@
+name: checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Установить зависимости
+        run: pip install -r requirements.txt
+      - name: Проверить импорты и синтаксис
+        run: |
+          python -m compileall -q main.py wb
+          python -c "from wb import client, collect, analytics, db, notify, web; print('модули загружаются')"
+      - name: Убедиться, что секреты не попали в репозиторий
+        run: |
+          test ! -f config.yaml || (echo "config.yaml не должен быть в репозитории" && exit 1)
+          ! grep -rIn --exclude-dir=.git --exclude=ci.yml -E "eyJhbGciOi[A-Za-z0-9]{10,}" . || (echo "Похоже на токен WB в коде" && exit 1)
