@@ -1,0 +1,23 @@
+# Секреты — никогда в репозиторий
+config.yaml
+*.token
+.env
+
+# Данные и база
+data/
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+*.log
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# ОС и редакторы
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

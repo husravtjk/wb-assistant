@@ -1,0 +1,61 @@
+# Скопируй в config.yaml и заполни. config.yaml в git не коммитить.
+
+telegram:
+  bot_token: "1234567:AA..."      # от @BotFather
+  chat_id: "123456789"            # твой ID от @userinfobot
+
+server:
+  host: "127.0.0.1"
+  port: 8765
+
+schedule:
+  digest_time: "09:00"            # время утреннего дайджеста, локальное время ноутбука
+  collect_every_min: 60           # как часто тянуть заказы/продажи
+  timezone: "Asia/Shanghai"       # ты в Китае; для МСК поставь Europe/Moscow
+
+thresholds:
+  oos_days: 7                     # алерт, если остатка меньше N дней продаж
+  drop_pct: 30                    # алерт, если заказы упали на N% к среднему за 7 дней
+  bad_rating: 3                   # алерт по отзывам с оценкой <= N
+  adv_budget_days: 2              # алерт, если бюджета кампании хватит менее чем на N дней
+  cpo_limit: 300                  # алерт, если CPO кампании выше N рублей
+
+stores:
+  - key: textile
+    name: "Текстиль (тюль/вуаль/ткань)"
+    token: "ТОКЕН_1"              # категории: Контент, Статистика, Продвижение, Цены, Отзывы
+    enabled: true
+
+  - key: relaxis
+    name: "RELAXIS"
+    token: "ТОКЕН_2"
+    enabled: true
+
+  - key: sheyla
+    name: "SHEYLA Cosmetics"
+    token: "ТОКЕН_3"
+    enabled: true
+
+# Базовые хосты API. Если WB что-то переедет — правится здесь, код не трогаем.
+hosts:
+  common: "https://common-api.wildberries.ru"
+  content: "https://content-api.wildberries.ru"
+  prices: "https://discounts-prices-api.wildberries.ru"
+  marketplace: "https://marketplace-api.wildberries.ru"
+  statistics: "https://statistics-api.wildberries.ru"
+  analytics: "https://seller-analytics-api.wildberries.ru"
+  advert: "https://advert-api.wildberries.ru"
+  feedbacks: "https://feedbacks-api.wildberries.ru"
+  finance: "https://finance-api.wildberries.ru"
+
+# Лимиты запросов в минуту по хостам. Занижены намеренно — WB банит на час.
+rate_limits:
+  statistics: 1
+  content: 60
+  prices: 60
+  advert: 30
+  feedbacks: 30
+  analytics: 3
+  common: 10
+  finance: 10
+  marketplace: 100
