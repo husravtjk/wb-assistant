@@ -51,6 +51,7 @@ async def collect_sales(cli: WBClient, store: str, days: int = 30) -> int:
         "price_with_disc": _d(s.get("priceWithDisc")),
         "warehouse": s.get("warehouseName"),
         "region": s.get("regionName"),
+        "is_return": 1 if str(s.get("saleID") or "").upper().startswith("R") else 0,
     } for s in data]
     n = db.upsert("sales", rows)
     db.log_run(store, "sales", "ok", f"{n} строк")
@@ -195,6 +196,48 @@ async def collect_questions(cli: WBClient, store: str) -> int:
     return n
 
 
+async def collect_promotions(cli: WBClient, store: str, ahead_days: int = 21) -> int:
+    """Акции на ближайшие недели и наши товары в них."""
+    start = date.today().isoformat() + "T00:00:00Z"
+    end = (date.today() + timedelta(days=ahead_days)).isoformat() + "T23:59:59Z"
+    resp = await cli.promotions(start, end)
+    promos = ((resp or {}).get("data") or {}).get("promotions") or []
+    if not promos:
+        db.log_run(store, "promotions", "ok", "акций нет")
+        return 0
+
+    rows = [{
+        "store": store, "promo_id": p.get("id"), "name": p.get("name"),
+        "type": p.get("type"),
+        "start_date": (p.get("startDateTime") or "")[:19],
+        "end_date": (p.get("endDateTime") or "")[:19],
+        "in_promo_count": None,
+        "updated": datetime.now().isoformat(timespec="seconds"),
+    } for p in promos if p.get("id")]
+
+    item_rows = []
+    for p in rows[:10]:
+        try:
+            n = await cli.promotion_nomenclatures(p["promo_id"], in_action=True)
+            goods = ((n or {}).get("data") or {}).get("nomenclatures") or []
+            p["in_promo_count"] = len(goods)
+            for g in goods:
+                item_rows.append({
+                    "store": store, "promo_id": p["promo_id"],
+                    "nm_id": g.get("id") or g.get("nmID"),
+                    "price_now": _d(g.get("price")),
+                    "price_promo": _d(g.get("planPrice")),
+                    "in_promo": 1,
+                })
+        except Exception as e:  # noqa: BLE001
+            log.warning("[%s] товары акции %s: %s", store, p["promo_id"], e)
+
+    db.upsert("promotions", rows)
+    db.upsert("promo_items", item_rows)
+    db.log_run(store, "promotions", "ok", f"{len(rows)} акций, {len(item_rows)} товаров")
+    return len(rows)
+
+
 ALL_TASKS = {
     "orders": collect_orders,
     "sales": collect_sales,
@@ -203,6 +246,7 @@ ALL_TASKS = {
     "adverts": collect_adverts,
     "feedbacks": collect_feedbacks,
     "questions": collect_questions,
+    "promotions": collect_promotions,
 }
 
 

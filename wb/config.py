@@ -26,6 +26,7 @@ class Config:
     thresholds: dict
     hosts: dict
     rate_limits: dict
+    economics: dict
     stores: list = field(default_factory=list)
 
     @property
@@ -58,6 +59,7 @@ def load(path: str = CONFIG_PATH) -> Config:
         thresholds=raw.get("thresholds", {}),
         hosts=raw.get("hosts", {}),
         rate_limits=raw.get("rate_limits", {}),
+        economics=raw.get("economics", {}),
         stores=stores,
     )
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)

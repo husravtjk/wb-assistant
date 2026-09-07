@@ -19,8 +19,28 @@ CREATE INDEX IF NOT EXISTS ix_orders_nm ON orders(store, nm_id, date);
 CREATE TABLE IF NOT EXISTS sales (
     store TEXT, sale_id TEXT, date TEXT, nm_id INTEGER, article TEXT,
     finished_price REAL, for_pay REAL, price_with_disc REAL,
-    warehouse TEXT, region TEXT,
+    warehouse TEXT, region TEXT, is_return INTEGER DEFAULT 0,
     PRIMARY KEY (store, sale_id)
+);
+CREATE INDEX IF NOT EXISTS ix_sales_return ON sales(store, is_return, date);
+
+CREATE TABLE IF NOT EXISTS costs (
+    store TEXT, nm_id INTEGER, article TEXT,
+    cost REAL, packaging REAL, delivery_to_wh REAL, other REAL,
+    PRIMARY KEY (store, nm_id)
+);
+
+CREATE TABLE IF NOT EXISTS promotions (
+    store TEXT, promo_id INTEGER, name TEXT, type TEXT,
+    start_date TEXT, end_date TEXT, in_promo_count INTEGER,
+    updated TEXT,
+    PRIMARY KEY (store, promo_id)
+);
+
+CREATE TABLE IF NOT EXISTS promo_items (
+    store TEXT, promo_id INTEGER, nm_id INTEGER,
+    price_now REAL, price_promo REAL, in_promo INTEGER,
+    PRIMARY KEY (store, promo_id, nm_id)
 );
 CREATE INDEX IF NOT EXISTS ix_sales_date ON sales(store, date);
 

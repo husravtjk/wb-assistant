@@ -203,3 +203,25 @@ class WBClient:
 
     async def seller_rating(self):
         return await self.request("common", "/api/common/v1/rating")
+
+    async def promotions(self, start: str, end: str, all_promo: bool = True):
+        """Календарь акций. Отдельный хост dp-calendar-api."""
+        return await self.request(
+            "calendar", "/api/v1/calendar/promotions",
+            params={"startDateTime": start, "endDateTime": end,
+                    "allPromo": str(all_promo).lower()},
+        )
+
+    async def promotion_details(self, promo_ids: list[int]):
+        return await self.request(
+            "calendar", "/api/v1/calendar/promotions/details",
+            params={"promotionIDs": promo_ids},
+        )
+
+    async def promotion_nomenclatures(self, promo_id: int, in_action: bool = True,
+                                      limit: int = 1000, offset: int = 0):
+        return await self.request(
+            "calendar", "/api/v1/calendar/promotions/nomenclatures",
+            params={"promotionID": promo_id, "inAction": str(in_action).lower(),
+                    "limit": limit, "offset": offset},
+        )

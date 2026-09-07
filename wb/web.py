@@ -134,11 +134,11 @@ def create_app(cfg) -> FastAPI:
 
     @app.get("/api/digest")
     def digest():
-        return {"text": analytics.build_digest(cfg.active_stores, cfg.thresholds)}
+        return {"text": analytics.build_digest(cfg.active_stores, cfg.thresholds, cfg.economics)}
 
     @app.post("/api/digest/send")
     async def digest_send():
-        text = analytics.build_digest(cfg.active_stores, cfg.thresholds)
+        text = analytics.build_digest(cfg.active_stores, cfg.thresholds, cfg.economics)
         ok = await send(cfg.telegram.get("bot_token"), cfg.telegram.get("chat_id"), text)
         return {"message": "Сводка отправлена" if ok else "Telegram не настроен"}
 
