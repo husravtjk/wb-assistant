@@ -12,6 +12,10 @@ schedule:
   digest_time: "09:00"            # время утреннего дайджеста, локальное время ноутбука
   collect_every_min: 60           # как часто тянуть заказы/продажи
   timezone: "Asia/Shanghai"       # ты в Китае; для МСК поставь Europe/Moscow
+  weekly:                         # недельный отчёт
+    day: "wed"
+    time: "17:00"
+    timezone: "Europe/Moscow"     # свой пояс, независимо от пояса ноутбука
 
 thresholds:
   oos_days: 7                     # алерт, если остатка меньше N дней продаж

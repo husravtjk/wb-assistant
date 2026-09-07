@@ -8,7 +8,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 
-from wb import analytics, config, db, economics
+from wb import analytics, config, db, economics, report
 from wb.client import Throttle, WBClient
 from wb.collect import collect_store
 from wb.notify import send
@@ -43,6 +43,16 @@ async def job_digest() -> None:
     log.info("Сводка отправлена")
 
 
+async def job_weekly() -> None:
+    """Недельный отчёт: собирает свежие данные, рендерит HTML, шлёт сводку."""
+    await job_collect()
+    data = report.collect_report(cfg.active_stores, cfg.thresholds, cfg.economics)
+    path = report.save(data)
+    log.info("Отчёт сохранён: %s", path)
+    await send(cfg.telegram.get("bot_token"), cfg.telegram.get("chat_id"),
+               report.telegram_summary(data))
+
+
 def setup_scheduler() -> AsyncIOScheduler:
     tz = cfg.schedule.get("timezone", "Europe/Moscow")
     sched = AsyncIOScheduler(timezone=tz)
@@ -55,6 +65,18 @@ def setup_scheduler() -> AsyncIOScheduler:
     sched.add_job(job_collect, IntervalTrigger(minutes=every),
                   args=[["orders", "sales", "feedbacks", "questions"]],
                   id="collect", misfire_grace_time=1800)
+
+    wk = cfg.schedule.get("weekly", {})
+    sched.add_job(
+        job_weekly,
+        CronTrigger(
+            day_of_week=wk.get("day", "wed"),
+            hour=int(str(wk.get("time", "17:00")).split(":")[0]),
+            minute=int(str(wk.get("time", "17:00")).split(":")[1]),
+            timezone=wk.get("timezone", "Europe/Moscow"),
+        ),
+        id="weekly", misfire_grace_time=6 * 3600,
+    )
 
     sched.add_job(job_collect, CronTrigger(hour="*/6"),
                   args=[["stocks", "prices", "adverts", "promotions"]],
@@ -69,6 +91,11 @@ async def cli_once(what: str) -> None:
         print(analytics.build_digest(cfg.active_stores, cfg.thresholds, cfg.economics))
     elif what == "send":
         await job_digest()
+    elif what == "weekly":
+        await job_weekly()
+    elif what == "report":
+        data = report.collect_report(cfg.active_stores, cfg.thresholds, cfg.economics)
+        print("Отчёт сохранён:", report.save(data))
     elif what == "audit":
         print(analytics.audit_report(cfg.active_stores, cfg.thresholds))
     elif what == "costs":
@@ -83,7 +110,7 @@ async def cli_once(what: str) -> None:
             except Exception as e:  # noqa: BLE001
                 print(f"{st.name}: ОШИБКА — {e}")
     else:
-        print("Команды: collect | digest | send | check | costs | audit")
+        print("Команды: collect | digest | send | check | costs | audit | report | weekly")
 
 
 def main() -> None:
