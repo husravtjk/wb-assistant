@@ -47,6 +47,7 @@ hosts:
   advert: "https://advert-api.wildberries.ru"
   feedbacks: "https://feedbacks-api.wildberries.ru"
   finance: "https://finance-api.wildberries.ru"
+  calendar: "https://dp-calendar-api.wildberries.ru"
 
 # Лимиты запросов в минуту по хостам. Занижены намеренно — WB банит на час.
 rate_limits:
@@ -59,3 +60,16 @@ rate_limits:
   common: 10
   finance: 10
   marketplace: 100
+  calendar: 10
+
+# Юнит-экономика. Ключ = key магазина, либо default для всех.
+# Себестоимость по SKU лежит отдельно, в costs.csv.
+economics:
+  default:
+    commission_pct: 0.20          # комиссия WB по твоей категории
+    acquiring_pct: 0.02           # эквайринг
+    tax_pct: 0.06                 # налог (УСН доходы)
+    logistics_rub: 60             # логистика до покупателя, ₽/шт
+    return_logistics_rub: 50      # обратная логистика при невыкупе
+    storage_rub: 5                # хранение на единицу
+    default_redemption: 0.7       # выкуп, если своих данных ещё мало

@@ -8,7 +8,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 
-from wb import analytics, config, db
+from wb import analytics, config, db, economics
 from wb.client import Throttle, WBClient
 from wb.collect import collect_store
 from wb.notify import send
@@ -38,7 +38,7 @@ async def job_collect(tasks: list[str] | None = None) -> None:
 
 async def job_digest() -> None:
     await job_collect()
-    text = analytics.build_digest(cfg.active_stores, cfg.thresholds)
+    text = analytics.build_digest(cfg.active_stores, cfg.thresholds, cfg.economics)
     await send(cfg.telegram.get("bot_token"), cfg.telegram.get("chat_id"), text)
     log.info("Сводка отправлена")
 
@@ -57,7 +57,7 @@ def setup_scheduler() -> AsyncIOScheduler:
                   id="collect", misfire_grace_time=1800)
 
     sched.add_job(job_collect, CronTrigger(hour="*/6"),
-                  args=[["stocks", "prices", "adverts"]],
+                  args=[["stocks", "prices", "adverts", "promotions"]],
                   id="heavy", misfire_grace_time=1800)
     return sched
 
@@ -66,9 +66,14 @@ async def cli_once(what: str) -> None:
     if what == "collect":
         await job_collect()
     elif what == "digest":
-        print(analytics.build_digest(cfg.active_stores, cfg.thresholds))
+        print(analytics.build_digest(cfg.active_stores, cfg.thresholds, cfg.economics))
     elif what == "send":
         await job_digest()
+    elif what == "audit":
+        print(analytics.audit_report(cfg.active_stores, cfg.thresholds))
+    elif what == "costs":
+        n = economics.load_costs_csv()
+        print(f"Загружено строк себестоимости: {n}")
     elif what == "check":
         for st in cfg.active_stores:
             try:
@@ -78,7 +83,7 @@ async def cli_once(what: str) -> None:
             except Exception as e:  # noqa: BLE001
                 print(f"{st.name}: ОШИБКА — {e}")
     else:
-        print("Команды: collect | digest | send | check")
+        print("Команды: collect | digest | send | check | costs | audit")
 
 
 def main() -> None:
