@@ -2,7 +2,7 @@
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse, JSONResponse
 
-from . import analytics, db
+from . import analytics, db, report
 from .client import Throttle, WBClient
 from .collect import collect_store
 from .notify import send
@@ -49,6 +49,8 @@ button:focus-visible{outline:2px solid var(--good);outline-offset:2px}
 <div class="bar">
   <button onclick="run('/api/collect')">Обновить данные</button>
   <button onclick="run('/api/digest/send')">Отправить сводку в Telegram</button>
+  <button onclick="run('/api/report/build')">Собрать недельный отчёт</button>
+  <a href="/report" target="_blank"><button>Открыть отчёт</button></a>
 </div>
 <div id="log"></div>
 <div id="body">Загружаю…</div>
@@ -141,6 +143,22 @@ def create_app(cfg) -> FastAPI:
         text = analytics.build_digest(cfg.active_stores, cfg.thresholds, cfg.economics)
         ok = await send(cfg.telegram.get("bot_token"), cfg.telegram.get("chat_id"), text)
         return {"message": "Сводка отправлена" if ok else "Telegram не настроен"}
+
+    @app.get("/report", response_class=HTMLResponse)
+    def report_latest():
+        import glob, os
+        files = sorted(glob.glob(os.path.join(report.REPORTS_DIR, "*.html")))
+        if not files:
+            return HTMLResponse(
+                "<p>Отчётов пока нет. Сформировать: <code>python main.py report</code></p>")
+        with open(files[-1], encoding="utf-8") as f:
+            return f.read()
+
+    @app.post("/api/report/build")
+    async def report_build():
+        data = report.collect_report(cfg.active_stores, cfg.thresholds, cfg.economics)
+        path = report.save(data)
+        return {"message": f"Отчёт готов: {path}"}
 
     @app.get("/api/runs")
     def runs():
