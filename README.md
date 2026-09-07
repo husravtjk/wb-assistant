@@ -48,11 +48,22 @@ cp config.example.yaml config.yaml
 python main.py           # сервер + планировщик
 python main.py check     # проверить токены
 python main.py collect   # разовый сбор данных
-python main.py digest    # напечатать сводку в консоль, не отправляя
-python main.py send      # собрать данные и отправить сводку в Telegram
-python main.py costs     # загрузить себестоимость из costs.csv
-python main.py audit     # список карточек на разбор + чек-лист
+python main.py digest     # напечатать сводку в консоль, не отправляя
+python main.py analytics  # универсальная аналитика по всем магазинам
+python main.py send       # собрать данные и отправить сводку в Telegram
+python main.py costs      # загрузить себестоимость из costs.csv
+python main.py audit      # список карточек на разбор + чек-лист
 ```
+
+## Универсальная аналитика
+
+`python main.py analytics` (алиас `universal`) считает **одинаковый набор KPI**
+по каждому кабинету и сводит итог сверху: заказы, выручка, выкупы/возвраты,
+реклама и CPO, OOS, просадки спроса, убыточные SKU, рискованные акции, очередь
+аудита. Магазины ранжируются по вчерашней выручке.
+
+JSON того же среза: `GET /api/analytics` на локальной панели.
+
 
 ## Юнит-экономика
 
@@ -90,7 +101,7 @@ python main.py audit     # список карточек на разбор + ч�
 ## Чтобы работало круглосуточно
 
 Ноутбук не должен уходить в сон. Автозапуск на Windows: `Win+R` → `shell:startup` →
-положить туда ярлык на `python C:\wb-assistant\main.py`.
+положить туда ярлык на `python C:\\wb-assistant\\main.py`.
 
 Если ноутбук был выключен, планировщик догонит пропущенные задачи в пределах часа
 (`misfire_grace_time`), а данные за прошлые дни всё равно подтянутся — API отдаёт
