@@ -12,6 +12,7 @@ from wb import analytics, config, db, economics, report
 from wb.client import Throttle, WBClient
 from wb.collect import collect_store
 from wb.notify import send
+from wb.universal import format_universal_report, universal_report
 from wb.web import create_app
 
 logging.basicConfig(
@@ -75,7 +76,8 @@ def setup_scheduler() -> AsyncIOScheduler:
             minute=int(str(wk.get("time", "17:00")).split(":")[1]),
             timezone=wk.get("timezone", "Europe/Moscow"),
         ),
-        id="weekly", misfire_grace_time=6 * 3600,
+        id="weekly",
+        misfire_grace_time=6 * 3600,
     )
 
     sched.add_job(job_collect, CronTrigger(hour="*/6"),
@@ -89,6 +91,9 @@ async def cli_once(what: str) -> None:
         await job_collect()
     elif what == "digest":
         print(analytics.build_digest(cfg.active_stores, cfg.thresholds, cfg.economics))
+    elif what in ("analytics", "universal"):
+        data = universal_report(cfg.active_stores, cfg.thresholds, cfg.economics)
+        print(format_universal_report(data))
     elif what == "send":
         await job_digest()
     elif what == "weekly":
@@ -110,7 +115,10 @@ async def cli_once(what: str) -> None:
             except Exception as e:  # noqa: BLE001
                 print(f"{st.name}: ОШИБКА — {e}")
     else:
-        print("Команды: collect | digest | send | check | costs | audit | report | weekly")
+        print(
+            "Команды: collect | digest | analytics | send | check | "
+            "costs | audit | report | weekly"
+        )
 
 
 def main() -> None:

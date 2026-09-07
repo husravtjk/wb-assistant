@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from . import analytics, db, report
+from .universal import universal_report
 from .client import Throttle, WBClient
 from .collect import collect_store
 from .notify import send
@@ -123,7 +124,8 @@ def create_app(cfg) -> FastAPI:
                 "drops": analytics.demand_drop(st.key, t.get("drop_pct", 30)),
                 "unanswered": analytics.unanswered_counts(st.key),
             })
-        return {"date": day, "stores": out}
+        uni = universal_report(cfg.active_stores, cfg.thresholds, cfg.economics)
+        return {"date": day, "stores": out, "aggregate": uni["aggregate"], "ranking": uni["ranking"]}
 
     @app.post("/api/collect")
     async def collect(store: str | None = None, tasks: str | None = None):
@@ -175,5 +177,11 @@ def create_app(cfg) -> FastAPI:
             except Exception as e:  # noqa: BLE001
                 out[st.key] = f"ошибка: {e}"
         return out
+
+
+    @app.get("/api/analytics")
+    def analytics_universal():
+        """Универсальный срез по всем магазинам: KPI + агрегат."""
+        return universal_report(cfg.active_stores, cfg.thresholds, cfg.economics)
 
     return app
